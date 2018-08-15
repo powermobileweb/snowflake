@@ -1,0 +1,53 @@
+---
+format_version: 1.1.0
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+app:
+  envs:
+  - BITRISE_PROJECT_PATH: ios/snowflake.xcodeproj
+    opts:
+      is_expand: false
+  - BITRISE_SCHEME: snowflake
+    opts:
+      is_expand: false
+trigger_map:
+- pattern: master
+  is_pull_request_allowed: true
+  workflow: primary
+workflows:
+  primary:
+    steps:
+    - activate-ssh-key@3.1.1:
+        title: Activate App SSH key
+        inputs:
+        - ssh_key_save_path: "$HOME/.ssh/steplib_ssh_step_id_rsa"
+    - git-clone@3.3.4:
+        inputs:
+        - clone_depth: '1'
+    - script@1.1.2:
+        title: npm install
+        inputs:
+        - content: |-
+            #!/bin/bash
+
+            npm install
+    - script@1.1.2:
+        title: npm test
+        inputs:
+        - content: |-
+            #!/bin/bash
+
+            npm test
+    - install-react-native@0.1.0: {}
+    - file-downloader@0.9.1:
+        inputs:
+        - source: "$BITRISEIO_snowflakeserver_URL"
+        - destination: src/lib/config.js
+    - react-native-bundle@1.0.0:
+        inputs:
+        - entry_file: "./index.ios.js"
+        - out: ios/main.jsbundle
+    - certificate-and-profile-installer@1.6.0: {}
+    - fastlane@2.2.0:
+        inputs:
+        - lane: ios beta
+    - deploy-to-bitrise-io@1.2.5: {}
